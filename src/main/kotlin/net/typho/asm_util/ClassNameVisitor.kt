@@ -19,7 +19,7 @@ class ClassNameVisitor : ClassVisitor {
         version: Int,
         access: Int,
         name: String,
-        signature: String,
+        signature: String?,
         superName: String?,
         interfaces: Array<String>?
     ) {
