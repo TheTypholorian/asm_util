@@ -59,7 +59,7 @@ object ASMUtil {
             remove(from)
         } else {
             while (from.next !== to) {
-                remove(from.next ?: throw IllegalStateException())
+                remove(from.next ?: throw IllegalStateException("Splice ran off the edge of the InsnList"))
             }
 
             remove(from)
@@ -85,7 +85,7 @@ object ASMUtil {
             remove(from)
         } else {
             while (from.next !== to) {
-                remove(from.next ?: throw IllegalStateException())
+                remove(from.next ?: throw IllegalStateException("Splice ran off the edge of the InsnList"))
             }
 
             remove(from)
