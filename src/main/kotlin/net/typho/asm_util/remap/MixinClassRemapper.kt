@@ -29,7 +29,7 @@ class MixinClassRemapper : ClassRemapper {
                 override fun visitArray(name: String): AnnotationVisitor? {
                     return when (name) {
                         "value", "targets" -> object : AnnotationVisitor(api, super.visitArray(name)) {
-                            override fun visit(name: String, value: Any?) {
+                            override fun visit(name: String?, value: Any?) {
                                 super.visit(name, value)
 
                                 if (value is String) {
