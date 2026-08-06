@@ -4,6 +4,7 @@ import net.typho.asm_util.error.ClassVisitException
 import org.objectweb.asm.ClassWriter
 
 open class ClassOutputInfo {
+    @JvmField
     var className: String? = null
 
     protected var changed = false
@@ -16,25 +17,25 @@ open class ClassOutputInfo {
         this.className = className
     }
 
-    fun markChanged() {
+    open fun markChanged() {
         changed = true
     }
 
-    fun computeMaxStacks() {
+    open fun computeMaxStacks() {
         writerFlags = writerFlags or ClassWriter.COMPUTE_MAXS
     }
 
-    fun computeFrames() {
+    open fun computeFrames() {
         writerFlags = writerFlags or ClassWriter.COMPUTE_FRAMES
     }
 
-    fun error(error: String) {
+    open fun error(error: String) {
         if (!errors.contains(error)) {
             errors.add(error)
         }
     }
 
-    fun end(): ClassWriter? {
+    open fun end(): ClassWriter? {
         if (!errors.isEmpty()) {
             throw ClassVisitException((if (errors.size == 1) "Error" else "Errors") + " while transforming class $className:\n${errors.joinToString(separator = "\n")}")
         }
