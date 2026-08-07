@@ -5,34 +5,34 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
 
-open class ClassTransformInfo {
+open class ClassTransformInfo(
     @JvmField
-    val node: ClassNode
-    @JvmField
-    val reader: ClassReader
+    protected val originalBytes: ByteArray
+) {
+    val node by lazy {
+        val node = ClassNode()
+        val reader = ClassReader(originalBytes)
+        this.reader = reader
+        reader.accept(node, 0)
+        node
+    }
+
     @JvmField
     protected var changed = false
     @JvmField
     protected var writerFlags = 0
     @JvmField
-    protected var writerFactory: ((node: ClassNode, reader: ClassReader, flags: Int) -> ClassWriter)? = null
+    protected var writerFactory: ((reader: ClassReader?, flags: Int) -> ClassWriter)? = null
     @JvmField
     protected val errors = mutableListOf<String>()
-
-    constructor(bytes: ByteArray) : this(ClassNode(), ClassReader(bytes)) {
-        reader.accept(node, 0)
-    }
-
-    constructor(node: ClassNode, reader: ClassReader) {
-        this.node = node
-        this.reader = reader
-    }
+    @JvmField
+    protected var reader: ClassReader? = null
 
     open fun markChanged() {
         changed = true
     }
 
-    open fun writerFactory(factory: (node: ClassNode, reader: ClassReader, flags: Int) -> ClassWriter) {
+    open fun writerFactory(factory: (reader: ClassReader?, flags: Int) -> ClassWriter) {
         if (this.writerFactory != null) {
             throw NullPointerException("Cannot set ClassOutputInfo factory more than once")
         }
@@ -59,6 +59,10 @@ open class ClassTransformInfo {
             throw ClassVisitException((if (errors.size == 1) "Error" else "Errors") + " while transforming class ${node.name}:\n${errors.joinToString(separator = "\n")}")
         }
 
-        return if (changed) writerFactory?.invoke(node, reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
+        return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
+    }
+
+    open fun compile(): ByteArray {
+        return end()?.toByteArray() ?: originalBytes
     }
 }
