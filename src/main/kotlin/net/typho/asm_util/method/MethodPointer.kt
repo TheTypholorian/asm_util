@@ -95,6 +95,7 @@ class MethodPointer private constructor() : ASMPointer<MethodNode, ClassNode, Me
         return Optional.empty()
     }
 
+
     override fun toString(): String {
         return toString(
             "Method",

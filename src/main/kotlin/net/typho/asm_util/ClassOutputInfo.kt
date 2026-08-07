@@ -7,8 +7,11 @@ open class ClassOutputInfo {
     @JvmField
     var className: String? = null
 
+    @JvmField
     protected var changed = false
+    @JvmField
     protected var writerFlags = 0
+    @JvmField
     protected val errors = mutableListOf<String>()
 
     constructor()

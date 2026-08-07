@@ -10,20 +10,22 @@ import java.util.function.Consumer
 
 object ASMUtil {
     @JvmStatic
-    fun InsnList.addSysOut(message: String) {
-        add(FieldInsnNode(
+    fun createSysOut(message: String): InsnList {
+        val insns = InsnList()
+        insns.add(FieldInsnNode(
             Opcodes.GETSTATIC,
             "java/lang/System",
             "out",
             "Ljava/io/PrintStream;"
         ))
-        add(LdcInsnNode(message))
-        add(MethodInsnNode(
+        insns.add(LdcInsnNode(message))
+        insns.add(MethodInsnNode(
             Opcodes.INVOKEVIRTUAL,
             "java/io/PrintStream",
             "println",
             "(Ljava/lang/String;)V"
         ))
+        return insns
     }
 
     @JvmStatic
