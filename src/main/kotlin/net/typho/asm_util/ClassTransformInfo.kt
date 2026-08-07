@@ -62,7 +62,14 @@ open class ClassTransformInfo(
         return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
     }
 
-    open fun compile(): ByteArray {
-        return end()?.toByteArray() ?: originalBytes
+    fun compile() = compile { name, bytes -> }
+
+    open fun compile(debugOut: (name: String, bytes: ByteArray) -> Unit): ByteArray {
+        return end()?.let {
+            node.accept(it)
+            val bytes = it.toByteArray()
+            debugOut(node.name, bytes)
+            bytes
+        } ?: originalBytes
     }
 }
