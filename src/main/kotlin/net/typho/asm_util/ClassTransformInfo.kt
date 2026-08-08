@@ -64,12 +64,12 @@ open class ClassTransformInfo(
 
     fun compile() = compile { name, bytes -> }
 
-    open fun compile(debugOut: (name: String, bytes: ByteArray) -> Unit): ByteArray {
+    open fun compile(debugOut: (name: String, bytes: ByteArray) -> Unit): ByteArray? {
         return end()?.let {
             node.accept(it)
             val bytes = it.toByteArray()
             debugOut(node.name, bytes)
             bytes
-        } ?: originalBytes
+        }
     }
 }
