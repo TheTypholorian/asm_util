@@ -28,6 +28,14 @@ class FieldInsnPointer internal constructor() : InsnPointer<FieldInsnNode, Field
                 return@BiPredicate false
             }
 
+            if (name != null && node.name != name) {
+                if (self.debug) {
+                    println("\t\tExpected name $name but got ${node.name}")
+                }
+
+                return@BiPredicate false
+            }
+
             if (desc != null && node.desc != desc) {
                 if (self.debug) {
                     println("\t\tExpected desc $desc but got ${node.desc}")
