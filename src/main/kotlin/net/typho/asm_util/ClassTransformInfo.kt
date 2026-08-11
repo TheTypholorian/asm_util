@@ -5,71 +5,101 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
 
-open class ClassTransformInfo(
-    @JvmField
-    protected val originalBytes: ByteArray
-) {
-    val node by lazy {
-        val node = ClassNode()
-        val reader = ClassReader(originalBytes)
-        this.reader = reader
-        reader.accept(node, 0)
-        node
+interface ClassTransformInfo {
+    val node: ClassNode
+    var fallbackErrorSource: Any?
+
+    fun error(error: String) = error(error, null)
+
+    fun error(error: String, source: Any?)
+
+    fun markChanged() {
     }
 
-    @JvmField
-    protected var changed = false
-    @JvmField
-    protected var writerFlags = 0
-    @JvmField
-    protected var writerFactory: ((reader: ClassReader?, flags: Int) -> ClassWriter)? = null
-    @JvmField
-    protected val errors = mutableListOf<String>()
-    @JvmField
-    protected var reader: ClassReader? = null
-
-    open fun markChanged() {
-        changed = true
+    fun computeMaxStacks() {
     }
 
-    open fun writerFactory(factory: (reader: ClassReader?, flags: Int) -> ClassWriter) {
-        if (this.writerFactory != null) {
-            throw NullPointerException("Cannot set ClassOutputInfo factory more than once")
-        }
-
-        this.writerFactory = factory
+    fun computeFrames() {
     }
 
-    open fun computeMaxStacks() {
-        writerFlags = writerFlags or ClassWriter.COMPUTE_MAXS
-    }
-
-    open fun computeFrames() {
-        writerFlags = writerFlags or ClassWriter.COMPUTE_FRAMES
-    }
-
-    open fun error(error: String) {
-        if (!errors.contains(error)) {
-            errors.add(error)
+    companion object {
+        @JvmStatic
+        fun checkErrors(errors: List<Pair<String, Any?>>, className: () -> String) {
+            if (!errors.isEmpty()) {
+                throw ClassVisitException((if (errors.size == 1) "Error" else "Errors") + " while transforming class ${className()}:\n${errors.joinToString(separator = "\n", transform = { (error, source) -> "$error (caused by '${source ?: "unknown"}')" })}")
+            }
         }
     }
 
-    open fun end(): ClassWriter? {
-        if (!errors.isEmpty()) {
-            throw ClassVisitException((if (errors.size == 1) "Error" else "Errors") + " while transforming class ${node.name}:\n${errors.joinToString(separator = "\n")}")
+    open class AgentTransform(
+        bytes: ByteArray
+    ) : ClassTransformInfo {
+        @JvmField
+        protected val lazyNode = LazyClassNode(bytes)
+        override val node: ClassNode by lazyNode
+        var writerFactory: ((reader: ClassReader?, flags: Int) -> ClassWriter)? = null
+            set(value) {
+                if (field != null) {
+                    throw IllegalStateException("Cannot set ClassOutputInfo factory more than once")
+                }
+
+                field = value
+            }
+        @JvmField
+        protected var changed = false
+        @JvmField
+        protected var writerFlags = 0
+        @JvmField
+        protected val errors = mutableListOf<Pair<String, Any?>>()
+        override var fallbackErrorSource: Any? = null
+
+        override fun markChanged() {
+            changed = true
         }
 
-        return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
+        override fun computeMaxStacks() {
+            writerFlags = writerFlags or ClassWriter.COMPUTE_MAXS
+        }
+
+        override fun computeFrames() {
+            writerFlags = writerFlags or ClassWriter.COMPUTE_FRAMES
+        }
+
+        override fun error(error: String, source: Any?) {
+            errors.add(error to (source ?: fallbackErrorSource))
+        }
+
+        fun createWriter(): ClassWriter? {
+            checkErrors(errors) { node.name }
+
+            val reader = lazyNode.getReader() ?: return null
+
+            return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
+        }
+
+        fun compile(debugOut: (name: String, bytes: ByteArray) -> Unit): ByteArray? {
+            return createWriter()?.let {
+                node.accept(it)
+                val bytes = it.toByteArray()
+                debugOut(node.name, bytes)
+                bytes
+            }
+        }
     }
 
-    fun compile() = compile { name, bytes -> }
+    open class Wrapper(
+        override val node: ClassNode
+    ) : ClassTransformInfo {
+        @JvmField
+        protected val errors = mutableListOf<Pair<String, Any?>>()
+        override var fallbackErrorSource: Any? = null
 
-    open fun compile(debugOut: (name: String, bytes: ByteArray) -> Unit): ByteArray? {
-        return end()?.let {
-            node.accept(it)
-            val bytes = it.toByteArray()
-            debugOut(node.name, bytes)
-            bytes
+        override fun error(error: String, source: Any?) {
+            errors.add(error to (source ?: fallbackErrorSource))
+        }
+
+        fun checkErrors() {
+            checkErrors(errors) { node.name }
         }
     }
 }
