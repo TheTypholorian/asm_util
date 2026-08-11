@@ -92,7 +92,13 @@ interface ClassTransformInfo {
     ) : ClassTransformInfo {
         @JvmField
         protected val errors = mutableListOf<Pair<String, Any?>>()
+        @JvmField
+        var changed = false
         override var fallbackErrorSource: Any? = null
+
+        override fun markChanged() {
+            changed = true
+        }
 
         override fun error(error: String, source: Any?) {
             errors.add(error to (source ?: fallbackErrorSource))
