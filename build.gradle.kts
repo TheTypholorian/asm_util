@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "net.typho"
-version = "1.0.11"
+version = "1.0.12"
 
 repositories {
     mavenCentral()
@@ -14,6 +14,7 @@ dependencies {
     implementation("org.ow2.asm:asm-tree:9.10.1")
     implementation("org.ow2.asm:asm-util:9.10.1")
     implementation("org.ow2.asm:asm-commons:9.10.1")
+    implementation("org.jetbrains.kotlin:kotlin-metadata-jvm:2.2.0")
     implementation("org.jetbrains:annotations:26.0.2")
 }
 

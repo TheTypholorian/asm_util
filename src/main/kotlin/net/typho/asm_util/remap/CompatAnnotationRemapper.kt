@@ -5,7 +5,7 @@ import org.objectweb.asm.Type
 import org.objectweb.asm.commons.AnnotationRemapper
 import org.objectweb.asm.commons.Remapper
 
-open class MixinAnnotationRemapper : AnnotationRemapper {
+open class CompatAnnotationRemapper : AnnotationRemapper {
     companion object {
         @JvmField
         val ACCESSOR_TYPES = mutableMapOf<String?, (remapper: Remapper, owner: String, name: String, targetDescriptor: String) -> String>(
@@ -101,10 +101,10 @@ open class MixinAnnotationRemapper : AnnotationRemapper {
 
     @Deprecated("Deprecated in Java")
     override fun createAnnotationRemapper(parent: AnnotationVisitor): AnnotationVisitor {
-        return MixinAnnotationRemapper(api, null, parent, remapper, mixinTargets, targetDescriptor)
+        return CompatAnnotationRemapper(api, null, parent, remapper, mixinTargets, targetDescriptor)
     }
 
     override fun createAnnotationRemapper(descriptor: String?, parent: AnnotationVisitor): AnnotationVisitor {
-        return MixinAnnotationRemapper(api, descriptor, parent, remapper, mixinTargets, targetDescriptor)
+        return CompatAnnotationRemapper(api, descriptor, parent, remapper, mixinTargets, targetDescriptor)
     }
 }

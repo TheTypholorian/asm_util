@@ -1,5 +1,8 @@
 package net.typho.asm_util.remap
 
+import net.typho.asm_util.ASMUtil.kotlinMetadata
+import net.typho.asm_util.ASMUtil.visitKotlinMetadata
+import net.typho.asm_util.KotlinUtil.mapKotlinClassMetadata
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.FieldVisitor
@@ -7,8 +10,10 @@ import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.ClassRemapper
 import org.objectweb.asm.commons.Remapper
+import org.objectweb.asm.tree.AnnotationNode
+import kotlin.metadata.jvm.KotlinClassMetadata
 
-class MixinClassRemapper : ClassRemapper {
+class CompatClassRemapper : ClassRemapper {
     companion object {
         @JvmField
         val MIXIN_ANNOTATIONS = mutableSetOf(
@@ -43,6 +48,22 @@ class MixinClassRemapper : ClassRemapper {
                     }
                 }
             }
+        } else if (descriptor == "Lkotlin/Metadata;") {
+            val inner = super.visitAnnotation(descriptor, visible)
+
+            return object : AnnotationNode(api, descriptor) {
+                override fun visitEnd() {
+                    super.visitEnd()
+
+                    inner.visitKotlinMetadata(
+                        remapper.mapKotlinClassMetadata(
+                            className,
+                            KotlinClassMetadata.readLenient(kotlinMetadata!!)
+                        ).write()
+                    )
+                    inner.visitEnd()
+                }
+            }
         }
 
         return super.visitAnnotation(descriptor, visible)
@@ -56,7 +77,7 @@ class MixinClassRemapper : ClassRemapper {
         value: Any?
     ): FieldVisitor? {
         val visitor = super.visitField(access, name, descriptor, signature, value)
-        visitor?.let { (it as MixinFieldRemapper).desc = descriptor }
+        visitor?.let { (it as CompatFieldRemapper).desc = descriptor }
         return visitor
     }
 
@@ -68,29 +89,29 @@ class MixinClassRemapper : ClassRemapper {
         exceptions: Array<String>?
     ): MethodVisitor? {
         val visitor = super.visitMethod(access, name, descriptor, signature, exceptions)
-        visitor?.let { (it as MixinMethodRemapper).desc = descriptor }
+        visitor?.let { (it as CompatMethodRemapper).desc = descriptor }
         return visitor
     }
 
-    override fun createFieldRemapper(fieldVisitor: FieldVisitor?): MixinFieldRemapper {
-        return MixinFieldRemapper(api, fieldVisitor, remapper, mixinTargets)
+    override fun createFieldRemapper(fieldVisitor: FieldVisitor?): CompatFieldRemapper {
+        return CompatFieldRemapper(api, fieldVisitor, remapper, mixinTargets)
     }
 
-    override fun createMethodRemapper(methodVisitor: MethodVisitor?): MixinMethodRemapper {
-        return MixinMethodRemapper(api, methodVisitor, remapper, mixinTargets)
+    override fun createMethodRemapper(methodVisitor: MethodVisitor?): CompatMethodRemapper {
+        return CompatMethodRemapper(api, methodVisitor, remapper, mixinTargets)
     }
 
     @Deprecated("Deprecated in Java")
     override fun createAnnotationRemapper(
         annotationVisitor: AnnotationVisitor
-    ): MixinAnnotationRemapper {
-        return MixinAnnotationRemapper(api, null, annotationVisitor, remapper, mixinTargets, null)
+    ): CompatAnnotationRemapper {
+        return CompatAnnotationRemapper(api, null, annotationVisitor, remapper, mixinTargets, null)
     }
 
     override fun createAnnotationRemapper(
         descriptor: String,
         annotationVisitor: AnnotationVisitor
-    ): MixinAnnotationRemapper {
-        return MixinAnnotationRemapper(api, descriptor, annotationVisitor, remapper, mixinTargets, null)
+    ): CompatAnnotationRemapper {
+        return CompatAnnotationRemapper(api, descriptor, annotationVisitor, remapper, mixinTargets, null)
     }
 }
