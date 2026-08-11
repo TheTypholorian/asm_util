@@ -13,6 +13,8 @@ interface ClassTransformInfo {
 
     fun error(error: String, source: Any?)
 
+    fun checkErrors()
+
     fun markChanged() {
     }
 
@@ -69,21 +71,25 @@ interface ClassTransformInfo {
             errors.add(error to (source ?: fallbackErrorSource))
         }
 
-        fun createWriter(): ClassWriter? {
+        override fun checkErrors() {
             checkErrors(errors) { node.name }
+        }
 
+        fun createWriter(): ClassWriter? {
             val reader = lazyNode.getReader() ?: return null
 
             return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
         }
 
         fun compile(debugOut: (name: String, bytes: ByteArray) -> Unit): ByteArray? {
-            return createWriter()?.let {
+            val bytes = createWriter()?.let {
                 node.accept(it)
                 val bytes = it.toByteArray()
                 debugOut(node.name, bytes)
                 bytes
             }
+            checkErrors()
+            return bytes
         }
     }
 
@@ -104,7 +110,7 @@ interface ClassTransformInfo {
             errors.add(error to (source ?: fallbackErrorSource))
         }
 
-        fun checkErrors() {
+        override fun checkErrors() {
             checkErrors(errors) { node.name }
         }
     }
