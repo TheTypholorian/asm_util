@@ -1,12 +1,13 @@
 package net.typho.asm_util
 
+import net.typho.asm_util.ASMUtil.copyTo
 import net.typho.asm_util.error.ClassVisitException
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
 
 interface ClassTransformInfo {
-    val node: ClassNode
+    var node: ClassNode
     var fallbackErrorSource: Any?
 
     fun error(error: String) = error(error, null)
@@ -38,7 +39,7 @@ interface ClassTransformInfo {
     ) : ClassTransformInfo {
         @JvmField
         protected val lazyNode = LazyClassNode(bytes)
-        override val node: ClassNode by lazyNode
+        override var node: ClassNode by lazyNode::node
         var writerFactory: ((reader: ClassReader?, flags: Int) -> ClassWriter)? = null
             set(value) {
                 if (field != null) {
@@ -76,7 +77,7 @@ interface ClassTransformInfo {
         }
 
         fun createWriter(): ClassWriter? {
-            val reader = lazyNode.getReader() ?: return null
+            val reader = lazyNode.reader ?: return null
 
             return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
         }
@@ -94,8 +95,13 @@ interface ClassTransformInfo {
     }
 
     open class Wrapper(
-        override val node: ClassNode
+        node: ClassNode
     ) : ClassTransformInfo {
+        @Suppress("SetterBackingFieldAssignment")
+        override var node: ClassNode = node
+            set(value) {
+                value.copyTo(node)
+            }
         @JvmField
         protected val errors = mutableListOf<Pair<String, Any?>>()
         @JvmField
@@ -114,4 +120,8 @@ interface ClassTransformInfo {
             checkErrors(errors) { node.name }
         }
     }
+
+    open class MutableWrapper(
+        override var node: ClassNode
+    ) : Wrapper(node)
 }
