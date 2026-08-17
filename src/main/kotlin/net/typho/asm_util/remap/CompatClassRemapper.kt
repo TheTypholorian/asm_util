@@ -1,8 +1,8 @@
 package net.typho.asm_util.remap
 
-import net.typho.asm_util.ASMUtil.kotlinMetadata
-import net.typho.asm_util.ASMUtil.visitKotlinMetadata
+import net.typho.asm_util.KotlinUtil.kotlinMetadata
 import net.typho.asm_util.KotlinUtil.mapKotlinClassMetadata
+import net.typho.asm_util.KotlinUtil.visitKotlinMetadata
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.FieldVisitor

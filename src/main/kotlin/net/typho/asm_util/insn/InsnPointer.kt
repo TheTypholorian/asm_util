@@ -1,6 +1,7 @@
 package net.typho.asm_util.insn
 
 import net.typho.asm_util.ASMPointer
+import net.typho.asm_util.ASMUtil.iterateSlice
 import org.objectweb.asm.ConstantDynamic
 import org.objectweb.asm.Handle
 import org.objectweb.asm.Opcodes
@@ -9,13 +10,17 @@ import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.InsnList
 import java.util.*
 
-@Suppress("UNCHECKED_CAST")
+@Suppress("unused", "UNCHECKED_CAST")
 abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protected constructor(
     @JvmField
     protected val type: Int
 ) : ASMPointer<T, InsnList, S>() {
     @JvmField
     protected var ordinal: Int? = null
+    @JvmField
+    protected val after = mutableSetOf<AbstractInsnNode>()
+    @JvmField
+    protected val before = mutableSetOf<AbstractInsnNode>()
 
     fun ordinal(ordinal: Int): S {
         this.ordinal = ordinal
@@ -24,6 +29,16 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
 
     fun lastOrdinal(): S {
         return ordinal(Int.MAX_VALUE)
+    }
+
+    fun after(insn: AbstractInsnNode): S {
+        after.add(insn)
+        return self()
+    }
+
+    fun before(insn: AbstractInsnNode): S {
+        before.add(insn)
+        return self()
     }
 
     private fun test(insn: AbstractInsnNode): Boolean {
@@ -48,7 +63,7 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
         if (ordinal == Int.MAX_VALUE) {
             var match = Optional.empty<T>()
 
-            for (insn in target) {
+            target.iterateSlice(after, before).forEach { insn ->
                 if (debug) {
                     println("\tTesting opcode #${insn.opcode} $insn")
                 }
@@ -62,7 +77,7 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
         } else {
             var i = 0
 
-            for (insn in target) {
+            target.iterateSlice(after, before).forEach { insn ->
                 if (debug) {
                     println("\tTesting opcode #${insn.opcode} $insn")
                 }
@@ -245,6 +260,11 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
         @JvmStatic
         fun constant(value: ConstantDynamic): ConstantInsnPointer {
             return ConstantInsnPointer().value(value)
+        }
+
+        @JvmStatic
+        fun type(): TypeInsnPointer {
+            return TypeInsnPointer()
         }
 
         @JvmStatic
