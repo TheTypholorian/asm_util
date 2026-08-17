@@ -297,5 +297,10 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
         fun simple(): BasicInsnPointer {
             return BasicInsnPointer()
         }
+
+        @JvmStatic
+        fun label(): LabelInsnPointer {
+            return LabelInsnPointer()
+        }
     }
 }

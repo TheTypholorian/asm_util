@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.4.0"
+    `maven-publish`
 }
 
 group = "net.typho"
@@ -20,4 +21,12 @@ dependencies {
 
 kotlin {
     jvmToolchain(8)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
 }
