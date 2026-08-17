@@ -2,9 +2,12 @@ package net.typho.asm_util
 
 import net.typho.asm_util.ASMUtil.copyTo
 import net.typho.asm_util.error.ClassVisitException
+import net.typho.asm_util.field.FieldPointer.Companion.field
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
+import java.util.function.BiConsumer
+import java.util.function.BiFunction
 
 interface ClassTransformInfo {
     var node: ClassNode
@@ -40,7 +43,7 @@ interface ClassTransformInfo {
         @JvmField
         protected val lazyNode = LazyClassNode(bytes)
         override var node: ClassNode by lazyNode::node
-        var writerFactory: ((reader: ClassReader?, flags: Int) -> ClassWriter)? = null
+        var writerFactory: BiFunction<ClassReader?, Int, ClassWriter>? = null
             set(value) {
                 if (field != null) {
                     throw IllegalStateException("Cannot set ClassOutputInfo factory more than once")
@@ -79,15 +82,15 @@ interface ClassTransformInfo {
         fun createWriter(): ClassWriter? {
             val reader = lazyNode.reader ?: return null
 
-            return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
+            return if (changed) writerFactory?.apply(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
         }
 
         @JvmOverloads
-        fun compile(debugOut: ((name: String, bytes: ByteArray) -> Unit)? = null): ByteArray? {
+        fun compile(debugOut: BiConsumer<String, ByteArray>? = null): ByteArray? {
             val bytes = createWriter()?.let {
                 node.accept(it)
                 val bytes = it.toByteArray()
-                debugOut?.invoke(node.name, bytes)
+                debugOut?.accept(node.name, bytes)
                 bytes
             }
             checkErrors()

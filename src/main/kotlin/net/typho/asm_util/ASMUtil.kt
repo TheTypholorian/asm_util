@@ -10,6 +10,9 @@ import org.objectweb.asm.tree.FieldInsnNode
 import org.objectweb.asm.tree.InsnList
 import org.objectweb.asm.tree.LdcInsnNode
 import org.objectweb.asm.tree.MethodInsnNode
+import java.time.chrono.JapaneseEra.values
+import java.util.function.BiConsumer
+import java.util.function.Consumer
 import java.util.function.Function
 
 object ASMUtil {
@@ -66,11 +69,11 @@ object ASMUtil {
     }
 
     @JvmStatic
-    fun AnnotationNode.forEach(out: (name: String, value: Any) -> Unit) {
+    fun AnnotationNode.forEach(out: BiConsumer<String?, Any?>) {
         val iterator = values.iterator()
 
         while (iterator.hasNext()) {
-            out(iterator.next() as String, iterator.next())
+            out.accept(iterator.next() as String?, iterator.next())
         }
     }
 
@@ -130,14 +133,11 @@ object ASMUtil {
     @JvmStatic
     fun InsnList.splice(
         at: InsnPointer<*, *>,
-        replacement: InsnList.() -> Unit
+        replacement: InsnList
     ) {
         val at = at.findOrThrow(this)
 
-        val insns = InsnList()
-        replacement(insns)
-
-        insertBefore(at, insns)
+        insertBefore(at, replacement)
         remove(at)
     }
 
@@ -165,15 +165,12 @@ object ASMUtil {
     fun InsnList.splice(
         from: InsnPointer<*, *>,
         to: InsnPointer<*, *>,
-        replacement: InsnList.() -> Unit
+        replacement: InsnList
     ) {
         val from = from.findOrThrow(this)
         val to = to.findOrThrow(this)
 
-        val insns = InsnList()
-        replacement(insns)
-
-        insertBefore(from, insns)
+        insertBefore(from, replacement)
 
         if (from === to) {
             remove(from)
