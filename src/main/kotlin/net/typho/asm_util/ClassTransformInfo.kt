@@ -82,11 +82,12 @@ interface ClassTransformInfo {
             return if (changed) writerFactory?.invoke(reader, writerFlags) ?: ClassWriter(reader, writerFlags) else null
         }
 
-        fun compile(debugOut: (name: String, bytes: ByteArray) -> Unit): ByteArray? {
+        @JvmOverloads
+        fun compile(debugOut: ((name: String, bytes: ByteArray) -> Unit)? = null): ByteArray? {
             val bytes = createWriter()?.let {
                 node.accept(it)
                 val bytes = it.toByteArray()
-                debugOut(node.name, bytes)
+                debugOut?.invoke(node.name, bytes)
                 bytes
             }
             checkErrors()
