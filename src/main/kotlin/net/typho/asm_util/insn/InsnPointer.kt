@@ -55,29 +55,28 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
         return false
     }
 
-    override fun find(target: InsnList): Optional<T> {
+    override fun find(target: InsnList): List<T> {
         if (debug) {
             println("Locating $this in $target")
         }
 
         if (ordinal == Int.MAX_VALUE) {
-            var match = Optional.empty<T>()
-
             target.iterateSlice(after, before).forEach { insn ->
                 if (debug) {
                     println("\tTesting opcode #${insn.opcode} $insn")
                 }
 
                 if (test(insn)) {
-                    match = Optional.of(insn as T)
+                    return listOf(insn as T)
                 }
             }
 
-            return match
+            return listOf()
         } else {
             var i = 0
+            val matches = mutableListOf<T>()
 
-            target.iterateSlice(after, before).forEach { insn ->
+            for (insn in target.iterateSlice(after, before)) {
                 if (debug) {
                     println("\tTesting opcode #${insn.opcode} $insn")
                 }
@@ -88,7 +87,11 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
                             println("\t\tFound a match!")
                         }
 
-                        return Optional.of(insn as T)
+                        matches.add(insn as T)
+
+                        if (ordinal != null) {
+                            return matches
+                        }
                     } else if (debug) {
                         println("\t\tFailed ordinal test, expected $ordinal but got $i")
                     }
@@ -97,7 +100,7 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
                 }
             }
 
-            return Optional.empty()
+            return matches
         }
     }
 

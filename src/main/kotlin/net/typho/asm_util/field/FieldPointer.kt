@@ -78,22 +78,18 @@ class FieldPointer private constructor() : ASMPointer<FieldNode, ClassNode, Fiel
         return modifier(Modifier.entries.first { it.opcode == opcode }, value)
     }
 
-    override fun find(target: ClassNode): Optional<FieldNode> {
+    override fun find(target: ClassNode): List<FieldNode> {
         if (debug) {
             println("Locating $this in $target")
         }
 
-        for (field in target.fields) {
+        return target.fields.filter { field ->
             if (debug) {
                 println("\tTesting field $field")
             }
 
-            if (predicate.test(this, field)) {
-                return Optional.of(field)
-            }
+            predicate.test(this, field)
         }
-
-        return Optional.empty()
     }
 
     override fun toString(): String {

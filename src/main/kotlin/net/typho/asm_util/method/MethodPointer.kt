@@ -77,24 +77,19 @@ class MethodPointer private constructor() : ASMPointer<MethodNode, ClassNode, Me
         return modifier(Modifier.entries.first { it.opcode == opcode }, value)
     }
 
-    override fun find(target: ClassNode): Optional<MethodNode> {
+    override fun find(target: ClassNode): List<MethodNode> {
         if (debug) {
             println("Locating $this in $target")
         }
 
-        for (method in target.methods) {
+        return target.methods.filter { method ->
             if (debug) {
                 println("\tTesting method $method")
             }
 
-            if (predicate.test(this, method)) {
-                return Optional.of(method)
-            }
+            predicate.test(this, method)
         }
-
-        return Optional.empty()
     }
-
 
     override fun toString(): String {
         return toString(

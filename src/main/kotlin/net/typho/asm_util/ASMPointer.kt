@@ -34,14 +34,26 @@ abstract class ASMPointer<R, T, S> {
     /**
      * The first value that matches this pointer, or empty if none match
      */
-    abstract fun find(target: T): Optional<R>
+    abstract fun find(target: T): List<R>
 
     fun findOrThrow(target: T): R {
-        return find(target).orElseThrow { NullPointerException("Unable to find $this in $target") }
+        val matches = find(target)
+
+        if (matches.isEmpty()) {
+            throw NullPointerException("Unable to find $this in $target")
+        } else if (matches.size == 1) {
+            return matches.first()
+        } else {
+            throw IllegalStateException("Found multiple matches for $this in $target")
+        }
     }
 
     fun findOrThrow(target: T, out: Consumer<R>) {
         out.accept(findOrThrow(target))
+    }
+
+    fun forEach(target: T, out: Consumer<R>) {
+        find(target).forEach(out)
     }
 
     companion object {

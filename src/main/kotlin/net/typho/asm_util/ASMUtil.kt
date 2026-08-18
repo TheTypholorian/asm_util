@@ -144,9 +144,9 @@ object ASMUtil {
     fun InsnList.iterateSlice(
         after: Set<AbstractInsnNode>,
         before: Set<AbstractInsnNode>
-    ): Iterator<AbstractInsnNode> {
+    ): Iterable<AbstractInsnNode> {
         if (after.isEmpty() && before.isEmpty()) {
-            return iterator()
+            return this
         }
 
         val result = mutableListOf<AbstractInsnNode>()
@@ -169,6 +169,6 @@ object ASMUtil {
             }
         }
 
-        return result.iterator()
+        return result
     }
 }
