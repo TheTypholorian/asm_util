@@ -61,7 +61,7 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
         }
 
         if (ordinal == Int.MAX_VALUE) {
-            target.iterateSlice(after, before).forEach { insn ->
+            target.iterateSlice(after, before).reversed().forEach { insn ->
                 if (debug) {
                     println("\tTesting opcode #${insn.opcode} $insn")
                 }

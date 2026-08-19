@@ -21,7 +21,7 @@ open class CompatAnnotationRemapper : AnnotationRemapper {
     @JvmField
     val mixinTargets: MutableSet<Type>
     /**
-     * Null for classes, not null for fields and methods
+     * Null for classes, not null for fields and methods. Used for accessors and invokers.
      */
     @JvmField
     var targetDescriptor: String? = null
