@@ -29,4 +29,11 @@ publishing {
             from(components["java"])
         }
     }
+
+    repositories {
+        maven {
+            name = "typho"
+            url = uri(layout.projectDirectory.dir("../website/maven"))
+        }
+    }
 }
