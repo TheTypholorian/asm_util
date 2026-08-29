@@ -72,10 +72,12 @@ object ASMUtil {
 
     @JvmStatic
     fun AnnotationNode.forEach(out: BiConsumer<String?, Any?>) {
-        val iterator = values.iterator()
+        values?.let {
+            val iterator = it.iterator()
 
-        while (iterator.hasNext()) {
-            out.accept(iterator.next() as String?, iterator.next())
+            while (iterator.hasNext()) {
+                out.accept(iterator.next() as String?, iterator.next())
+            }
         }
     }
 
