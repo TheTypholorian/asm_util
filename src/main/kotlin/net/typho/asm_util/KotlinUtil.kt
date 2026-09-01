@@ -4,6 +4,7 @@ import net.typho.asm_util.ASMUtil.forEach
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.commons.Remapper
 import org.objectweb.asm.tree.AnnotationNode
+import org.objectweb.asm.tree.ClassNode
 import kotlin.metadata.ClassName
 import kotlin.metadata.ExperimentalAnnotationsInMetadata
 import kotlin.metadata.ExperimentalContextReceivers
@@ -45,6 +46,10 @@ import kotlin.metadata.jvm.syntheticMethodForDelegate
  */
 @OptIn(ExperimentalContextReceivers::class, ExperimentalAnnotationsInMetadata::class)
 object KotlinUtil {
+    @JvmStatic
+    val ClassNode.kotlinMetadata: Metadata?
+        get() = visibleAnnotations?.firstNotNullOfOrNull { it.kotlinMetadata }
+
     @Suppress("UNCHECKED_CAST")
     @get:JvmName("readKotlinMetadata")
     @JvmStatic
