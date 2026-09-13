@@ -14,6 +14,22 @@ import java.util.function.BiConsumer
 import java.util.function.Function
 
 object ASMUtil {
+    const val ACC_ALL = Opcodes.ACC_PUBLIC or Opcodes.ACC_PRIVATE or Opcodes.ACC_PROTECTED
+
+    @JvmStatic
+    fun accessPublic(modifiers: Int): Int {
+        return if (modifiers and Opcodes.ACC_PUBLIC == 0) {
+            (modifiers and ACC_ALL.inv()) or Opcodes.ACC_PUBLIC
+        } else modifiers
+    }
+
+    @JvmStatic
+    fun accessProtected(modifiers: Int): Int {
+        return if (modifiers and Opcodes.ACC_PUBLIC == 0 && modifiers and Opcodes.ACC_PROTECTED == 0) {
+            (modifiers and ACC_ALL.inv()) or Opcodes.ACC_PROTECTED
+        } else modifiers
+    }
+
     @JvmStatic
     fun createSysOut(message: String): InsnList {
         return InsnList().apply {
