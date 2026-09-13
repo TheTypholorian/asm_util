@@ -12,6 +12,7 @@ import java.util.function.BiFunction
 interface ClassTransformInfo {
     var node: ClassNode
     var fallbackErrorSource: Any?
+    val className: String
 
     fun error(error: String) = error(error, null)
 
@@ -37,12 +38,15 @@ interface ClassTransformInfo {
         }
     }
 
-    open class AgentTransform(
-        bytes: ByteArray
+    open class AgentTransform @JvmOverloads constructor(
+        bytes: ByteArray,
+        private val knownClassName: String? = null
     ) : ClassTransformInfo {
         @JvmField
         protected val lazyNode = LazyClassNode(bytes)
         override var node: ClassNode by lazyNode::node
+        override val className: String
+            get() = knownClassName ?: node.name
         var writerFactory: BiFunction<ClassReader?, Int, ClassWriter>? = null
             set(value) {
                 if (field != null) {
@@ -106,6 +110,8 @@ interface ClassTransformInfo {
             set(value) {
                 value.copyTo(node)
             }
+        override val className: String
+            get() = node.name
         @JvmField
         protected val errors = mutableListOf<Pair<String, Any?>>()
         @JvmField

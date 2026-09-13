@@ -11,11 +11,7 @@ import org.objectweb.asm.tree.InsnList
 import org.objectweb.asm.tree.LdcInsnNode
 import org.objectweb.asm.tree.MethodInsnNode
 import java.util.function.BiConsumer
-import java.util.function.Consumer
 import java.util.function.Function
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 object ASMUtil {
     @JvmStatic
