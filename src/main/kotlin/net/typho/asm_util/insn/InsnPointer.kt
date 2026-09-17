@@ -305,5 +305,10 @@ abstract class InsnPointer<T : AbstractInsnNode, S : InsnPointer<T, S>> protecte
         fun label(): LabelInsnPointer {
             return LabelInsnPointer()
         }
+
+        @JvmStatic
+        fun jump(): JumpInsnPointer {
+            return JumpInsnPointer()
+        }
     }
 }
