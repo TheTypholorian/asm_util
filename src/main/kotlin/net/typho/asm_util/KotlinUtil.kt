@@ -1,43 +1,13 @@
 package net.typho.asm_util
 
-import net.typho.asm_util.ASMUtil.forEach
+import net.typho.asm_util.ASMUtil.iterator
+import net.typho.asm_util.remap.KotlinRemapper
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.commons.Remapper
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
-import kotlin.metadata.ClassName
-import kotlin.metadata.ExperimentalAnnotationsInMetadata
-import kotlin.metadata.ExperimentalContextReceivers
-import kotlin.metadata.KmAnnotation
-import kotlin.metadata.KmAnnotationArgument
-import kotlin.metadata.KmClass
-import kotlin.metadata.KmClassifier
-import kotlin.metadata.KmConstructor
-import kotlin.metadata.KmEnumEntry
-import kotlin.metadata.KmFlexibleTypeUpperBound
-import kotlin.metadata.KmFunction
-import kotlin.metadata.KmLambda
-import kotlin.metadata.KmPackage
-import kotlin.metadata.KmProperty
-import kotlin.metadata.KmType
-import kotlin.metadata.KmTypeAlias
-import kotlin.metadata.KmTypeParameter
-import kotlin.metadata.KmTypeProjection
-import kotlin.metadata.KmValueParameter
-import kotlin.metadata.isLocalClassName
-import kotlin.metadata.jvm.JvmFieldSignature
-import kotlin.metadata.jvm.JvmMethodSignature
-import kotlin.metadata.jvm.KotlinClassMetadata
-import kotlin.metadata.jvm.annotations
-import kotlin.metadata.jvm.anonymousObjectOriginName
-import kotlin.metadata.jvm.fieldSignature
-import kotlin.metadata.jvm.getterSignature
-import kotlin.metadata.jvm.lambdaClassOriginName
-import kotlin.metadata.jvm.localDelegatedProperties
-import kotlin.metadata.jvm.setterSignature
-import kotlin.metadata.jvm.signature
-import kotlin.metadata.jvm.syntheticMethodForAnnotations
-import kotlin.metadata.jvm.syntheticMethodForDelegate
+import kotlin.metadata.*
+import kotlin.metadata.jvm.*
 
 /**
  * All methods here that return a new value assume that the input will be discarded.
@@ -68,7 +38,7 @@ object KotlinUtil {
             var packageName = ""
             var extraInt = 0
 
-            forEach { name, value ->
+            iterator().forEach { (name, value) ->
                 when (name) {
                     "k" -> kind = value as Int
                     "mv" -> metadataVersion = (value as List<Int>).toIntArray()
@@ -126,70 +96,83 @@ object KotlinUtil {
 
     @Suppress("DEPRECATION")
     @JvmStatic
-    fun Remapper.mapKotlinClass(cls: KmClass) {
+    fun Remapper.mapKotlinClass(cls: KmClass): KmClass {
+        val new = KmClass()
+
         val oldName = cls.name.replace('.', '$')
-        cls.name = mapKotlinClassName(cls.name)
-        cls.typeParameters.forEach { mapKotlinTypeParameter(it) }
-        cls.supertypes.forEach { mapKotlinType(it) }
-        cls.functions.forEach { mapKotlinFunction(oldName, it) }
-        cls.properties.forEach { mapKotlinProperty(oldName, it) }
-        cls.typeAliases.forEach { mapKotlinTypeAlias(it) }
-        cls.constructors.forEach { mapKotlinConstructor(it) }
-        cls.companionObject = cls.companionObject?.let { mapInnerClassName("$oldName$$it", oldName, it) }
-        cls.nestedClasses.forEach { mapInnerClassName("$oldName$$it", oldName, it) }
-        cls.enumEntries.replaceAll { mapFieldName(oldName, it, "L$oldName;") }
-        cls.kmEnumEntries.forEach { mapKotlinEnumEntry(oldName, it) }
-        cls.sealedSubclasses.forEach { mapInnerClassName("$oldName$$it", oldName, it) }
-        cls.inlineClassUnderlyingType?.let { mapKotlinType(it) }
-        cls.annotations.replaceAll { mapKotlinAnnotation(it) }
-        cls.contextReceiverTypes.forEach { mapKotlinType(it) }
-        cls.localDelegatedProperties.forEach { mapKotlinProperty(oldName, it) }
-        cls.anonymousObjectOriginName = cls.anonymousObjectOriginName?.let { map(it) }
-    }
+        new.name = mapKotlinClassName(cls.name)
+        new.typeParameters = cls.typeParameters.map { mapKotlinTypeParameter(it) }
+        new.supertypes = cls.supertypes.map { mapKotlinType(it) }
+        new.functions = cls.functions.map { mapKotlinFunction(oldName, it) }
+        new.properties = cls.properties.map { mapKotlinProperty(oldName, it) }
+        new.typeAliases = cls.typeAliases.map { mapKotlinTypeAlias(it) }
+        new.constructors = cls.constructors.map { mapKotlinConstructor(it) }
+        new.companionObject = cls.companionObject?.let { mapInnerClassName("$oldName$$it", oldName, it) }
+        new.nestedClasses = cls.nestedClasses.map { mapInnerClassName("$oldName$$it", oldName, it) }
+        new.enumEntries = cls.enumEntries.map { mapFieldName(oldName, it, "L$oldName;") }
+        new.kmEnumEntries = cls.kmEnumEntries.map { mapKotlinEnumEntry(oldName, it) }
+        new.sealedSubclasses = cls.sealedSubclasses.map { mapInnerClassName("$oldName$$it", oldName, it) }
 
-    @JvmStatic
-    fun Remapper.mapKotlinPackage(owner: String, pkg: KmPackage) {
-        pkg.functions.forEach { mapKotlinFunction(owner, it) }
-        pkg.properties.forEach { mapKotlinProperty(owner, it) }
-        pkg.typeAliases.forEach { mapKotlinTypeAlias(it) }
-        pkg.localDelegatedProperties.forEach { mapKotlinProperty(owner, it) }
-    }
+        if (cls.isValue) {
+            val name = cls.inlineClassUnderlyingPropertyName!!
+            val type = cls.inlineClassUnderlyingType!!
 
-    @JvmStatic
-    fun Remapper.mapKotlinLambda(owner: String, lambda: KmLambda) {
-        mapKotlinFunction(owner, lambda.function)
-    }
-
-    @JvmStatic
-    fun Remapper.mapKotlinConstructor(constructor: KmConstructor) {
-        constructor.valueParameters.forEach { mapKotlinValueParameter(it) }
-        constructor.annotations.replaceAll { mapKotlinAnnotation(it) }
-        constructor.signature = constructor.signature?.let { mapKotlinMethodSignature(it) }
-    }
-
-    @JvmStatic
-    fun Remapper.mapKotlinFunction(owner: String, func: KmFunction) {
-        func.name = mapMethodName(owner, func.name, func.signature?.descriptor ?: "()V")
-        func.typeParameters.forEach { mapKotlinTypeParameter(it) }
-        func.receiverParameterType?.let { mapKotlinType(it) }
-        func.extensionReceiverParameterAnnotations.replaceAll { mapKotlinAnnotation(it) }
-        func.contextReceiverTypes.forEach { mapKotlinType(it) }
-        func.valueParameters.forEach { mapKotlinValueParameter(it) }
-        mapKotlinType(func.returnType)
-        func.annotations.forEach { mapKotlinAnnotation(it) }
-        func.signature = func.signature?.let { mapKotlinMethodSignature(it) }
-        func.lambdaClassOriginName = func.lambdaClassOriginName?.let { map(it) }
-    }
-
-    @JvmStatic
-    fun Remapper.mapKotlinProperty(owner: String, property: KmProperty) {
-        property.fieldSignature?.let {
-            property.name = mapFieldName(owner, property.name, it.descriptor)
-        } ?: property.getterSignature?.let {
-            property.name = mapMethodName(owner, it.name, it.descriptor)
-        } ?: property.setterSignature?.let {
-            property.name = mapMethodName(owner, it.name, it.descriptor)
+            new.inlineClassUnderlyingPropertyName = if (this is KotlinRemapper) mapKotlinPropertyName(oldName, name, type) else name
+            new.inlineClassUnderlyingType = cls.inlineClassUnderlyingType?.let { mapKotlinType(it) }
         }
+
+        new.annotations.replaceAll { mapKotlinAnnotation(it) }
+        new.contextReceiverTypes = cls.contextReceiverTypes.map { mapKotlinType(it) }
+        new.localDelegatedProperties = cls.localDelegatedProperties.map { mapKotlinProperty(oldName, it) }
+        new.anonymousObjectOriginName = cls.anonymousObjectOriginName?.let { map(it) }
+
+        return new
+    }
+
+    @JvmStatic
+    fun Remapper.mapKotlinPackage(owner: String, pkg: KmPackage): KmPackage {
+        val new = KmPackage()
+        new.functions = pkg.functions.map { mapKotlinFunction(owner, it) }
+        new.properties = pkg.properties.map { mapKotlinProperty(owner, it) }
+        new.typeAliases = pkg.typeAliases.map { mapKotlinTypeAlias(it) }
+        new.localDelegatedProperties = pkg.localDelegatedProperties.map { mapKotlinProperty(owner, it) }
+        return new
+    }
+
+    @JvmStatic
+    fun Remapper.mapKotlinLambda(owner: String, lambda: KmLambda): KmLambda {
+        val new = KmLambda()
+        new.function = mapKotlinFunction(owner, lambda.function)
+        return new
+    }
+
+    @JvmStatic
+    fun Remapper.mapKotlinConstructor(constructor: KmConstructor): KmConstructor {
+        val new = KmConstructor()
+        new.valueParameters = constructor.valueParameters.map { mapKotlinValueParameter(it) }
+        new.annotations = constructor.annotations.map { mapKotlinAnnotation(it) }
+        new.signature = constructor.signature?.let { mapKotlinMethodSignature(it) }
+        return new
+    }
+
+    @JvmStatic
+    fun Remapper.mapKotlinFunction(owner: String, func: KmFunction): KmFunction {
+        val new = KmFunction(mapMethodName(owner, func.name, func.signature?.descriptor ?: "()V"))
+        new.typeParameters = func.typeParameters.map { mapKotlinTypeParameter(it) }
+        new.receiverParameterType = func.receiverParameterType?.let { mapKotlinType(it) }
+        new.extensionReceiverParameterAnnotations = func.extensionReceiverParameterAnnotations.map { mapKotlinAnnotation(it) }
+        new.contextReceiverTypes = func.contextReceiverTypes.map { mapKotlinType(it) }
+        new.valueParameters = func.valueParameters.map { mapKotlinValueParameter(it) }
+        new.returnType = mapKotlinType(func.returnType)
+        new.annotations = func.annotations.map { mapKotlinAnnotation(it) }
+        new.signature = func.signature?.let { mapKotlinMethodSignature(it) }
+        new.lambdaClassOriginName = func.lambdaClassOriginName?.let { map(it) }
+        return new
+    }
+
+    @JvmStatic
+    fun Remapper.mapKotlinProperty(owner: String, property: KmProperty): KmProperty {
+        val new = KmProperty(if (this is KotlinRemapper) mapKotlinPropertyName(owner, property.name, property.returnType) else property.fieldSignature?.let { mapFieldName(owner, property.name, it.descriptor) } ?: property.name)
         property.getter.annotations.replaceAll { mapKotlinAnnotation(it) }
         property.setter?.annotations?.replaceAll { mapKotlinAnnotation(it) }
         property.typeParameters.forEach { mapKotlinTypeParameter(it) }
@@ -286,6 +269,10 @@ object KotlinUtil {
 
     @JvmStatic
     fun Remapper.mapKotlinClassName(name: ClassName): ClassName {
+        if (this is KotlinRemapper) {
+            return mapKotlinClassName(name)
+        }
+
         val remapped = map(name.replace('.', '$')).replace('$', '.')
         return if (name.isLocalClassName()) ".$remapped" else remapped
     }

@@ -10,7 +10,6 @@ import org.objectweb.asm.tree.FieldInsnNode
 import org.objectweb.asm.tree.InsnList
 import org.objectweb.asm.tree.LdcInsnNode
 import org.objectweb.asm.tree.MethodInsnNode
-import java.util.function.BiConsumer
 import java.util.function.Function
 
 object ASMUtil {
@@ -83,14 +82,22 @@ object ASMUtil {
     }
 
     @JvmStatic
-    fun AnnotationNode.forEach(out: BiConsumer<String?, Any?>) {
+    operator fun AnnotationNode.iterator(): Iterator<Pair<String?, Any?>> {
         values?.let {
             val iterator = it.iterator()
 
-            while (iterator.hasNext()) {
-                out.accept(iterator.next() as String?, iterator.next())
+            return object : AbstractIterator<Pair<String?, Any?>>() {
+                override fun computeNext() {
+                    if (iterator.hasNext()) {
+                        setNext(iterator.next() as String? to iterator.next())
+                    } else {
+                        done()
+                    }
+                }
             }
         }
+
+        return listOf<Pair<String?, Any?>>().iterator()
     }
 
     @JvmStatic
