@@ -9,31 +9,38 @@ import org.objectweb.asm.commons.Remapper
 class CompatMethodRemapper : MethodRemapper {
     @JvmField
     val mixinTargets: MutableSet<Type>
+    @JvmField
+    val remapMixins: Boolean
     lateinit var desc: String
 
     constructor(
-        fieldVisitor: MethodVisitor?,
+        methodVisitor: MethodVisitor?,
         remapper: Remapper?,
-        mixinTargets: MutableSet<Type>
-    ) : super(fieldVisitor, remapper) {
+        mixinTargets: MutableSet<Type>,
+        remapMixins: Boolean
+    ) : super(methodVisitor, remapper) {
         this.mixinTargets = mixinTargets
+        this.remapMixins = remapMixins
     }
 
     constructor(
         api: Int,
-        fieldVisitor: MethodVisitor?,
+        methodVisitor: MethodVisitor?,
         remapper: Remapper?,
-        mixinTargets: MutableSet<Type>
-    ) : super(api, fieldVisitor, remapper) {
+        mixinTargets: MutableSet<Type>,
+        remapMixins: Boolean
+    ) : super(api, methodVisitor, remapper) {
         this.mixinTargets = mixinTargets
+        this.remapMixins = remapMixins
     }
+
 
     @Deprecated("Deprecated in Java")
     override fun createAnnotationRemapper(parent: AnnotationVisitor): AnnotationVisitor {
-        return CompatAnnotationRemapper(api, null, parent, remapper, mixinTargets, desc)
+        return CompatAnnotationRemapper(api, null, parent, remapper, mixinTargets, remapMixins, desc)
     }
 
     override fun createAnnotationRemapper(descriptor: String?, parent: AnnotationVisitor): AnnotationVisitor {
-        return CompatAnnotationRemapper(api, descriptor, parent, remapper, mixinTargets, desc)
+        return CompatAnnotationRemapper(api, descriptor, parent, remapper, mixinTargets, remapMixins, desc)
     }
 }

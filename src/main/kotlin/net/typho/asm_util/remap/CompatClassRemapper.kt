@@ -23,14 +23,32 @@ class CompatClassRemapper : ClassRemapper {
 
     @JvmField
     val mixinTargets = mutableSetOf<Type>()
+    @JvmField
+    var remapMixins: Boolean
 
-    constructor(classVisitor: ClassVisitor, remapper: Remapper) : super(classVisitor, remapper)
+    constructor(classVisitor: ClassVisitor?, remapper: Remapper?) : this(classVisitor, remapper, true)
 
-    constructor(api: Int, classVisitor: ClassVisitor, remapper: Remapper) : super(api, classVisitor, remapper)
+    constructor(api: Int, classVisitor: ClassVisitor?, remapper: Remapper?) : this(api, classVisitor, remapper, true)
+
+    constructor(classVisitor: ClassVisitor?, remapper: Remapper?, remapMixins: Boolean) : super(classVisitor, remapper) {
+        this.remapMixins = remapMixins
+    }
+
+    constructor(api: Int, classVisitor: ClassVisitor?, remapper: Remapper?, remapMixins: Boolean) : super(api, classVisitor, remapper) {
+        this.remapMixins = remapMixins
+    }
 
     override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor {
         if (MIXIN_ANNOTATIONS.contains(descriptor)) {
             return object : AnnotationVisitor(api, super.visitAnnotation(descriptor, visible)) {
+                override fun visit(name: String, value: Any?) {
+                    if (name == "remap") {
+                        remapMixins = value as Boolean
+                    }
+
+                    super.visit(name, value)
+                }
+
                 override fun visitArray(name: String): AnnotationVisitor? {
                     return when (name) {
                         "value", "targets" -> object : AnnotationVisitor(api, super.visitArray(name)) {
@@ -94,24 +112,24 @@ class CompatClassRemapper : ClassRemapper {
     }
 
     override fun createFieldRemapper(fieldVisitor: FieldVisitor?): CompatFieldRemapper {
-        return CompatFieldRemapper(api, fieldVisitor, remapper, mixinTargets)
+        return CompatFieldRemapper(api, fieldVisitor, remapper, mixinTargets, remapMixins)
     }
 
     override fun createMethodRemapper(methodVisitor: MethodVisitor?): CompatMethodRemapper {
-        return CompatMethodRemapper(api, methodVisitor, remapper, mixinTargets)
+        return CompatMethodRemapper(api, methodVisitor, remapper, mixinTargets, remapMixins)
     }
 
     @Deprecated("Deprecated in Java")
     override fun createAnnotationRemapper(
         annotationVisitor: AnnotationVisitor
     ): CompatAnnotationRemapper {
-        return CompatAnnotationRemapper(api, null, annotationVisitor, remapper, mixinTargets, null)
+        return CompatAnnotationRemapper(api, null, annotationVisitor, remapper, mixinTargets, remapMixins, null)
     }
 
     override fun createAnnotationRemapper(
         descriptor: String,
         annotationVisitor: AnnotationVisitor
     ): CompatAnnotationRemapper {
-        return CompatAnnotationRemapper(api, descriptor, annotationVisitor, remapper, mixinTargets, null)
+        return CompatAnnotationRemapper(api, descriptor, annotationVisitor, remapper, mixinTargets, remapMixins, null)
     }
 }

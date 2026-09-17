@@ -9,31 +9,38 @@ import org.objectweb.asm.commons.Remapper
 class CompatFieldRemapper : FieldRemapper {
     @JvmField
     val mixinTargets: MutableSet<Type>
+    @JvmField
+    val remapMixins: Boolean
     lateinit var desc: String
 
     constructor(
         fieldVisitor: FieldVisitor?,
         remapper: Remapper?,
-        mixinTargets: MutableSet<Type>
+        mixinTargets: MutableSet<Type>,
+        remapMixins: Boolean
     ) : super(fieldVisitor, remapper) {
         this.mixinTargets = mixinTargets
+        this.remapMixins = remapMixins
     }
 
     constructor(
         api: Int,
         fieldVisitor: FieldVisitor?,
         remapper: Remapper?,
-        mixinTargets: MutableSet<Type>
+        mixinTargets: MutableSet<Type>,
+        remapMixins: Boolean
     ) : super(api, fieldVisitor, remapper) {
         this.mixinTargets = mixinTargets
+        this.remapMixins = remapMixins
     }
+
 
     @Deprecated("Deprecated in Java")
     override fun createAnnotationRemapper(parent: AnnotationVisitor): AnnotationVisitor {
-        return CompatAnnotationRemapper(api, null, parent, remapper, mixinTargets, desc)
+        return CompatAnnotationRemapper(api, null, parent, remapper, mixinTargets, remapMixins, desc)
     }
 
     override fun createAnnotationRemapper(descriptor: String?, parent: AnnotationVisitor): AnnotationVisitor {
-        return CompatAnnotationRemapper(api, descriptor, parent, remapper, mixinTargets, desc)
+        return CompatAnnotationRemapper(api, descriptor, parent, remapper, mixinTargets, remapMixins, desc)
     }
 }
