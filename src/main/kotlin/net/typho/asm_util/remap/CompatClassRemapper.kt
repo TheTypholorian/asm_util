@@ -1,8 +1,8 @@
 package net.typho.asm_util.remap
 
 import net.typho.asm_util.KotlinUtil.kotlinMetadata
-import net.typho.asm_util.KotlinUtil.mapKotlinClassMetadata
 import net.typho.asm_util.KotlinUtil.visitKotlinMetadata
+import net.typho.asm_util.remap.KotlinMetadataRemapper.Companion.kotlinMetadataRemapper
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.FieldVisitor
@@ -56,7 +56,7 @@ class CompatClassRemapper : ClassRemapper {
                     super.visitEnd()
 
                     inner.visitKotlinMetadata(
-                        remapper.mapKotlinClassMetadata(
+                        remapper.kotlinMetadataRemapper.mapKtClassMetadata(
                             className,
                             KotlinClassMetadata.readLenient(kotlinMetadata!!)
                         ).write()

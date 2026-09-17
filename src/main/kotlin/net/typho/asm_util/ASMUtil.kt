@@ -82,22 +82,78 @@ object ASMUtil {
     }
 
     @JvmStatic
-    operator fun AnnotationNode.iterator(): Iterator<Pair<String?, Any?>> {
-        values?.let {
-            val iterator = it.iterator()
+    fun AnnotationNode.mapIterator(): MutableListIterator<Pair<String?, Any?>> {
+        val iterator = (values ?: mutableListOf<Any?>().also { values = it }).listIterator()
 
-            return object : AbstractIterator<Pair<String?, Any?>>() {
-                override fun computeNext() {
-                    if (iterator.hasNext()) {
-                        setNext(iterator.next() as String? to iterator.next())
-                    } else {
-                        done()
-                    }
-                }
+        return object : MutableListIterator<Pair<String?, Any?>> {
+            override fun add(element: Pair<String?, Any?>) {
+                iterator.add(element.first)
+                iterator.add(element.second)
+            }
+
+            override fun hasNext(): Boolean {
+                return iterator.hasNext()
+            }
+
+            override fun next(): Pair<String?, Any?> {
+                return iterator.next() as String? to iterator.next()
+            }
+
+            override fun remove() {
+                iterator.remove()
+                iterator.previous()
+                iterator.remove()
+            }
+
+            override fun set(element: Pair<String?, Any?>) {
+                iterator.set(element.second)
+                iterator.previous()
+                iterator.set(element.first)
+                iterator.next()
+            }
+
+            override fun hasPrevious(): Boolean {
+                return iterator.hasPrevious()
+            }
+
+            override fun previous(): Pair<String?, Any?> {
+                val value = iterator.previous()
+                return iterator.previous() as String? to value
+            }
+
+            override fun nextIndex(): Int {
+                return iterator.nextIndex()
+            }
+
+            override fun previousIndex(): Int {
+                return iterator.previousIndex()
+            }
+        }
+    }
+
+    @JvmStatic
+    operator fun AnnotationNode.get(key: String): Any? {
+        mapIterator().forEach { (key1, value) ->
+            if (key == key1) {
+                return value
             }
         }
 
-        return listOf<Pair<String?, Any?>>().iterator()
+        return null
+    }
+
+    @JvmStatic
+    operator fun AnnotationNode.set(key: String, value: Any?) {
+        val it = mapIterator()
+
+        while (it.hasNext()) {
+            val (key1, value1) = it.next()
+
+            if (key == key1) {
+                it.set(key to value)
+                break
+            }
+        }
     }
 
     @JvmStatic
