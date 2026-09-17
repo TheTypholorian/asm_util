@@ -6,7 +6,6 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.metadata.*
 import kotlin.metadata.jvm.*
 
-// TODO so far this is only used for the metadata annotation, need to make a custom remapping visitor to apply it to the rest of the class node
 @OptIn(ExperimentalAnnotationsInMetadata::class, ExperimentalContextReceivers::class, ExperimentalContracts::class)
 interface KotlinMetadataRemapper {
     val remapper: Remapper
@@ -68,8 +67,7 @@ interface KotlinMetadataRemapper {
     }
 
     fun mapKtClassName(name: ClassName): ClassName {
-        val jvm = remapper.map(name.toJvmInternalName())
-        return if (name.isLocalClassName()) ".$jvm" else jvm.replace('$', '.')
+        return remapper.map(name.toJvmInternalName()).toKtClassName(name.isLocalClassName())
     }
 
     fun mapKtMethodSignature(owner: ClassName, signature: JvmMethodSignature): JvmMethodSignature {
@@ -290,6 +288,12 @@ interface KotlinMetadataRemapper {
         @JvmStatic
         val Remapper.kotlinMetadataRemapper: KotlinMetadataRemapper
             get() = if (this is KotlinMetadataRemapper) this else Fallback(this)
+
+        @JvmOverloads
+        @JvmStatic
+        fun String.toKtClassName(local: Boolean = false): ClassName {
+            return if (local) ".$this" else replace('$', '.')
+        }
 
         @JvmStatic
         fun KmType.toJvmType(): Type {

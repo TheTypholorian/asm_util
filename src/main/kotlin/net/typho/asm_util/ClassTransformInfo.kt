@@ -2,7 +2,6 @@ package net.typho.asm_util
 
 import net.typho.asm_util.ASMUtil.copyTo
 import net.typho.asm_util.error.ClassVisitException
-import net.typho.asm_util.field.FieldPointer.Companion.field
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
@@ -38,7 +37,7 @@ interface ClassTransformInfo {
         }
     }
 
-    open class AgentTransform @JvmOverloads constructor(
+    open class ByteTransform @JvmOverloads constructor(
         bytes: ByteArray,
         private val knownClassName: String? = null
     ) : ClassTransformInfo {
