@@ -6,7 +6,7 @@ import org.objectweb.asm.Type
 import org.objectweb.asm.commons.FieldRemapper
 import org.objectweb.asm.commons.Remapper
 
-class CompatFieldRemapper : FieldRemapper {
+open class CompatFieldRemapper : FieldRemapper {
     @JvmField
     val mixinTargets: MutableSet<Type>
     @JvmField

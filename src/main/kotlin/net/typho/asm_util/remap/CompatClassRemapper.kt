@@ -13,7 +13,7 @@ import org.objectweb.asm.commons.Remapper
 import org.objectweb.asm.tree.AnnotationNode
 import kotlin.metadata.jvm.KotlinClassMetadata
 
-class CompatClassRemapper : ClassRemapper {
+open class CompatClassRemapper : ClassRemapper {
     companion object {
         @JvmField
         val MIXIN_ANNOTATIONS = mutableSetOf(
