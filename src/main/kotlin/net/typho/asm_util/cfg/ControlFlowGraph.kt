@@ -12,9 +12,11 @@ class ControlFlowGraph(
     @JvmField
     val blocks: List<BasicBlock>,
     @JvmField
+    val blocksByIndex: Map<Int, BasicBlock>,
+    @JvmField
     val blocksByInsn: Map<AbstractInsnNode, Int>,
     @JvmField
-    val blocksByIndex: Map<Int, Int>
+    val blocksByInsnIndex: Map<Int, Int>
 ) {
     companion object {
         @JvmOverloads
@@ -137,7 +139,7 @@ class ControlFlowGraph(
                 }
             }
 
-            return ControlFlowGraph(blocks, blocksByInsn, blocksByIndex)
+            return ControlFlowGraph(blocks, blocks.associateBy { it.index }, blocksByInsn, blocksByIndex)
         }
     }
 }
