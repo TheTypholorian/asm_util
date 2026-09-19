@@ -18,6 +18,81 @@ class ControlFlowGraph(
     @JvmField
     val blocksByInsnIndex: Map<Int, Int>
 ) {
+    private var dominatorTree: DominatorTree? = null
+
+    fun getCommonParent(blocks: List<BasicBlock>): BasicBlock? {
+        if (blocks.isEmpty()) {
+            return null
+        }
+
+        val tree = (dominatorTree ?: DominatorTree().also { dominatorTree = it })
+
+        var common = tree.dominators[blocks.first().index]?.toMutableSet() ?: return null
+
+        for (block in blocks.drop(1)) {
+            common.retainAll(tree.dominators[block.index] ?: return null)
+        }
+
+        return common.maxByOrNull { tree.dominators[it]?.size ?: 0 }?.let { blocks[it] }
+    }
+
+    private inner class DominatorTree {
+        @JvmField
+        val dominators = mutableMapOf<Int, MutableSet<Int>>()
+        @JvmField
+        val idoms = mutableMapOf<Int, Int>()
+        @JvmField
+        val children = mutableMapOf<Int, MutableList<Int>>()
+
+        init {
+            val entry = blocks.first()
+
+            for (block in blocks) {
+                dominators[block.index] = if (block == entry) mutableSetOf(block.index) else blocks.mapTo(mutableSetOf()) { it.index }
+                children[block.index] = mutableListOf()
+            }
+
+            var changed = true
+
+            while (changed) {
+                changed = false
+
+                for (block in blocks) {
+                    if (block == entry || block.previous.isEmpty()) {
+                        continue
+                    }
+
+                    val common = dominators[block.previous.first()]!!.toMutableSet()
+
+                    for (parent in block.previous.drop(1)) {
+                        common.retainAll(dominators[parent]!!)
+                    }
+
+                    common.add(block.index)
+
+                    if (common != dominators[block.index]) {
+                        dominators[block.index] = common
+                        changed = true
+                    }
+                }
+            }
+
+            for (block in blocks) {
+                if (block == entry) {
+                    continue
+                }
+
+                val candidates = dominators[block.index]!!.filter { it != block.index }
+                val idom = candidates.firstOrNull { candidate -> candidates.none { other -> other != candidate && dominators[other]!!.contains(candidate) } }
+
+                if (idom != null) {
+                    idoms[block.index] = idom
+                    children[idom]!!.add(block.index)
+                }
+            }
+        }
+    }
+
     companion object {
         @JvmOverloads
         @JvmStatic
