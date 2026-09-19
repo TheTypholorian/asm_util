@@ -69,7 +69,7 @@ open class CompatAnnotationRemapper : AnnotationRemapper {
                 } else if (mixinTargets.isNotEmpty()) {
                     if (ACCESSOR_TYPES.contains(descriptor)) {
                         val owner = mixinTargets.first().internalName
-                        value = ACCESSOR_TYPES[descriptor]!!.invoke(remapper, owner, value, targetDescriptor!!)
+                        value = ACCESSOR_TYPES[descriptor]!!.invoke(remapper, owner, value, targetDescriptor)
                     } else if (value.contains("(")) { // method
                         val index = value.indexOf('(')
                         var methodName = value.substring(0, index)
