@@ -148,7 +148,7 @@ class ControlFlowGraph(
 
             starts.forEachIndexed { blockIndex, start ->
                 val end = starts.getOrNull(blockIndex + 1) ?: insns.size
-                blocks.add(BasicBlock(blockIndex, start, end))
+                blocks.add(BasicBlock(blockIndex, start, end, mutableListOf(), mutableListOf()))
                 blocksByIndex[start] = blockIndex
 
                 for (index in start until end) {

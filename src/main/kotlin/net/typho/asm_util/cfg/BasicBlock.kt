@@ -6,10 +6,9 @@ data class BasicBlock(
     @JvmField
     val start: Int,
     @JvmField
-    val end: Int
-) {
+    val end: Int,
     @JvmField
-    val previous = mutableListOf<Int>()
+    val previous: MutableList<Int>,
     @JvmField
-    val next = mutableListOf<Int>()
-}
+    val next: MutableList<Int>
+)
