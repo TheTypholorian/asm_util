@@ -18,31 +18,36 @@ class ControlFlowGraph(
     @JvmField
     val blocksByInsnIndex: Map<Int, Int>
 ) {
-    private var dominatorTree: DominatorTree? = null
+    private val parentTree by lazy { Tree(BasicBlock::previous) }
+    private val childTree by lazy { Tree(BasicBlock::next) }
 
-    fun getCommonParent(blocks: List<BasicBlock>): BasicBlock? {
-        if (blocks.isEmpty()) {
-            return null
-        }
+    fun getCommonParent(blocks: List<BasicBlock>) = parentTree.getCommon(blocks)
 
-        val tree = (dominatorTree ?: DominatorTree().also { dominatorTree = it })
+    fun getCommonChild(blocks: List<BasicBlock>) = childTree.getCommon(blocks)
 
-        var common = tree.dominators[blocks.first().index]?.toMutableSet() ?: return null
-
-        for (block in blocks.drop(1)) {
-            common.retainAll(tree.dominators[block.index] ?: return null)
-        }
-
-        return common.maxByOrNull { tree.dominators[it]?.size ?: 0 }?.let { blocks[it] }
-    }
-
-    private inner class DominatorTree {
+    private inner class Tree(
+        getter: (BasicBlock) -> List<Int>
+    ) {
         @JvmField
         val dominators = mutableMapOf<Int, MutableSet<Int>>()
         @JvmField
         val idoms = mutableMapOf<Int, Int>()
         @JvmField
         val children = mutableMapOf<Int, MutableList<Int>>()
+
+        fun getCommon(blocks: List<BasicBlock>): BasicBlock? {
+            if (blocks.isEmpty()) {
+                return null
+            }
+
+            val common = dominators[blocks.first().index]?.toMutableSet() ?: return null
+
+            for (block in blocks.drop(1)) {
+                common.retainAll(dominators[block.index] ?: return null)
+            }
+
+            return common.maxByOrNull { dominators[it]?.size ?: 0 }?.let { blocks[it] }
+        }
 
         init {
             val entry = blocks.first()
@@ -58,13 +63,15 @@ class ControlFlowGraph(
                 changed = false
 
                 for (block in blocks) {
-                    if (block == entry || block.previous.isEmpty()) {
+                    val neighbors = getter(block)
+
+                    if (neighbors.isEmpty()) {
                         continue
                     }
 
-                    val common = dominators[block.previous.first()]!!.toMutableSet()
+                    val common = dominators[neighbors.first()]!!.toMutableSet()
 
-                    for (parent in block.previous.drop(1)) {
+                    for (parent in neighbors.drop(1)) {
                         common.retainAll(dominators[parent]!!)
                     }
 
