@@ -1,21 +1,21 @@
 plugins {
-    kotlin("jvm") version "2.4.0"
-    id("net.typho.typho_publish") version "1.0.4"
+    kotlin("jvm") version "2.4.21"
+    id("net.typho.typho_publish") version "1.0.5"
 }
 
 group = "net.typho"
-version = "1.3.6"
+version = "1.4.0"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation("org.ow2.asm:asm:9.10.1")
-    implementation("org.ow2.asm:asm-tree:9.10.1")
-    implementation("org.ow2.asm:asm-util:9.10.1")
-    implementation("org.ow2.asm:asm-commons:9.10.1")
-    implementation("org.jetbrains.kotlin:kotlin-metadata-jvm:2.2.0")
+    implementation("org.ow2.asm:asm:9.11.1")
+    implementation("org.ow2.asm:asm-tree:9.11.1")
+    implementation("org.ow2.asm:asm-util:9.11.1")
+    implementation("org.ow2.asm:asm-commons:9.11.1")
+    implementation(kotlin("metadata-jvm"))
     implementation("org.jetbrains:annotations:26.0.2")
 }
 

@@ -6,7 +6,8 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.metadata.*
 import kotlin.metadata.jvm.*
 
-@OptIn(ExperimentalAnnotationsInMetadata::class, ExperimentalContextReceivers::class, ExperimentalContracts::class)
+@Suppress("DEPRECATION", "DEPRECATION_ERROR") // don't care that things are deprecated since they still exist
+@OptIn(ExperimentalContextReceivers::class, ExperimentalContracts::class)
 interface KotlinMetadataRemapper {
     val remapper: Remapper
         get() = if (this is Remapper) this else throw ClassCastException("KotlinMetadataRemapper subclass $this does not override 'remapper' nor extend Remapper")
@@ -122,7 +123,6 @@ interface KotlinMetadataRemapper {
         cls.constructors.mapTo(new.constructors) { mapKtConstructor(cls.name, it) }
         new.companionObject = cls.companionObject?.let { mapKtCompanionObjectName(cls.name, it) }
         cls.nestedClasses.mapTo(new.nestedClasses) { mapKtNestedClassName(cls.name, it) }
-        @Suppress("DEPRECATION")
         cls.enumEntries.mapTo(new.enumEntries) { mapKtEnumEntryName(cls.name, it) }
         cls.kmEnumEntries.mapTo(new.kmEnumEntries) { mapKtEnumEntry(cls.name, it) }
         cls.sealedSubclasses.mapTo(new.sealedSubclasses) { mapKtClassName(it) }

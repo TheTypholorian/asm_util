@@ -1,18 +1,16 @@
 package net.typho.asm_util.field
 
 import net.typho.asm_util.ASMPointer
-import net.typho.asm_util.Modifier
+import net.typho.asm_util.AccessUtil.toAccessString
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
-import java.util.Optional
 import java.util.function.BiPredicate
-import kotlin.collections.iterator
 
 class FieldPointer private constructor() : ASMPointer<FieldNode, ClassNode, FieldPointer>() {
     private var name: String? = null
     private var desc: String? = null
     private var signature: String? = null
-    private val modifiers = mutableMapOf<Modifier, Boolean>()
+    private val modifiers = Array<Boolean?>(32) { null }
 
     init {
         predicate = BiPredicate { self, field ->
@@ -40,13 +38,17 @@ class FieldPointer private constructor() : ASMPointer<FieldNode, ClassNode, Fiel
                 return@BiPredicate false
             }
 
-            for ((modifier, value) in modifiers) {
-                if (((field.access and modifier.opcode) != 0) != value) {
-                    if (self.debug) {
-                        println("\t\tExpected modifier '${modifier.name.lowercase()}' to be $value but got ${!value}")
-                    }
+            modifiers.forEachIndexed { index, value ->
+                if (value != null) {
+                    val opcode = 1 shl index
 
-                    return@BiPredicate false
+                    if (((field.access and opcode) != 0) != value) {
+                        if (self.debug) {
+                            println("\t\tExpected modifier '${opcode.toAccessString()}' to be $value but got ${!value}")
+                        }
+
+                        return@BiPredicate false
+                    }
                 }
             }
 
@@ -69,13 +71,9 @@ class FieldPointer private constructor() : ASMPointer<FieldNode, ClassNode, Fiel
         return self()
     }
 
-    fun modifier(modifier: Modifier, value: Boolean): FieldPointer {
-        modifiers[modifier] = value
+    fun modifier(modifier: Int, value: Boolean): FieldPointer {
+        modifiers[Integer.numberOfTrailingZeros(modifier)] = value
         return self()
-    }
-
-    fun modifier(opcode: Int, value: Boolean): FieldPointer {
-        return modifier(Modifier.entries.first { it.opcode == opcode }, value)
     }
 
     override fun find(target: ClassNode): List<FieldNode> {
@@ -100,7 +98,7 @@ class FieldPointer private constructor() : ASMPointer<FieldNode, ClassNode, Fiel
             signature?.let { "signature=$it" },
             if (modifiers.isEmpty()) null else toString(
                 "modifiers=",
-                *modifiers.map { (modifier, value) -> "${modifier.name.lowercase()}=$value" }.toTypedArray()
+                *modifiers.mapIndexed { index, value -> "${(1 shl index).toAccessString()}=$value" }.toTypedArray()
             )
         )
     }
